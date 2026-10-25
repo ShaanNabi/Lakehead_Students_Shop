@@ -1,27 +1,22 @@
-"""
-Database helper for Lakehead Students Shop.
 
-Everything that touches SQLite goes through this file, so the rest of the
-app never writes raw SQL. Uses Python's built-in sqlite3 module (no ORM),
-so what you see here is exactly what runs against the database.
-"""
+# Database helper for Lakehead Students Shop.
+# Everything that touches SQLite goes through this file
+# Uses Python's built-in sqlite3 module
 
 import hashlib
 import hmac
 import os
 import sqlite3
 from pathlib import Path
-
 from flask import g
+
 
 DB_PATH = Path(__file__).resolve().parent / "lakehead_shop.db"
 
 PASSWORD_ITERATIONS = 600_000
 
 
-# -------------------------------------------------------------
 # Connection
-# -------------------------------------------------------------
 
 def connect(db_path=DB_PATH):
     """Open a raw connection. Use get_db() inside Flask routes instead."""
@@ -44,10 +39,8 @@ def close_db(exception=None):
         db.close()
 
 
-# -------------------------------------------------------------
 # Passwords (PBKDF2 from the standard library)
 # Stored format: pbkdf2_sha256$<iterations>$<salt hex>$<hash hex>
-# -------------------------------------------------------------
 
 def hash_password(password):
     salt = os.urandom(16)
@@ -63,9 +56,7 @@ def check_password(password, stored):
     return hmac.compare_digest(digest.hex(), hash_hex)
 
 
-# -------------------------------------------------------------
 # Users
-# -------------------------------------------------------------
 
 def find_university_for_email(db, email):
     """Return the university row whose domain matches the email, or None."""
@@ -115,17 +106,13 @@ def authenticate(db, email, password):
     return None
 
 
-# -------------------------------------------------------------
 # Categories
-# -------------------------------------------------------------
 
 def get_categories(db):
     return db.execute("SELECT * FROM categories ORDER BY name").fetchall()
 
 
-# -------------------------------------------------------------
 # Listings
-# -------------------------------------------------------------
 
 # Shared SELECT so every listing query returns the same shape:
 # listing columns + seller name + category name + first image
@@ -206,9 +193,7 @@ def set_listing_status(db, listing_id, seller_id, status):
     return cur.rowcount == 1
 
 
-# -------------------------------------------------------------
 # Favorites
-# -------------------------------------------------------------
 
 def add_favorite(db, user_id, listing_id):
     db.execute(
@@ -234,9 +219,7 @@ def get_favorites(db, user_id):
     ).fetchall()
 
 
-# -------------------------------------------------------------
 # Messaging
-# -------------------------------------------------------------
 
 def get_or_create_conversation(db, listing_id, buyer_id):
     db.execute(
