@@ -1,21 +1,13 @@
-"""
-Lakehead Students Shop - Flask backend (JSON API).
 
-    python backend/app.py      -> http://127.0.0.1:5000
-
-The frontend calls these /api/... routes with fetch(). All database work
-lives in db.py, so routes just validate input and return JSON.
-"""
+# Lakehead Students Shop - Flask backend (JSON API).
 
 import os
 from functools import wraps
-
 from flask import Flask, jsonify, request, session
-
 import db
 
 app = Flask(__name__)
-# Signs the login cookie. Set a real random value in production.
+# signs the login cookie and set a real random value in production.
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")
 app.teardown_appcontext(db.close_db)
 
@@ -39,10 +31,9 @@ def login_required(view):
     return wrapper
 
 
-# -------------------------------------------------------------
-# Auth
-# -------------------------------------------------------------
 
+# Auth
+#----------
 @app.post("/api/register")
 def register():
     data = request.get_json(silent=True) or {}
@@ -84,9 +75,8 @@ def me():
     return jsonify(user=to_dict(db.get_user(db.get_db(), session["user_id"])))
 
 
-# -------------------------------------------------------------
+
 # Categories + listings
-# -------------------------------------------------------------
 
 @app.get("/api/categories")
 def categories():
@@ -153,9 +143,8 @@ def user_listings(user_id):
     return jsonify([public_listing(r) for r in db.get_listings_by_seller(db.get_db(), user_id)])
 
 
-# -------------------------------------------------------------
+
 # Favorites
-# -------------------------------------------------------------
 
 @app.get("/api/favorites")
 @login_required
@@ -180,9 +169,8 @@ def remove_favorite(listing_id):
     return jsonify(ok=True)
 
 
-# -------------------------------------------------------------
+
 # Messaging
-# -------------------------------------------------------------
 
 @app.get("/api/conversations")
 @login_required

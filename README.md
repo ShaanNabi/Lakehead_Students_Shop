@@ -6,5 +6,3 @@ Proposed System: Our project will develop a Java-based desktop Campus Marketplac
 Core Functionality: The application will include user registration and login, creation and management of listings, item images, search and filtering, favorites, buyer-seller messaging, user profiles, and the ability to mark items as sold. 
 
 Value: The system will provide students with a simple and organized platform for buying and selling items within their university community. It can make transactions more convenient, help students save money, reduce waste by encouraging reuse, and provide a more focused alternative to general online marketplaces.
-
-hi
