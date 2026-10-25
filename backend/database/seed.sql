@@ -1,7 +1,5 @@
--- =============================================================
 -- Demo data so the site has something to show while we build it.
--- Every demo account's password is:  password123
--- =============================================================
+-- Every demo account's password is: password123
 
 INSERT INTO universities (id, name, email_domain) VALUES
     (1, 'Lakehead University', 'lakeheadu.ca');
@@ -15,7 +13,7 @@ INSERT INTO categories (id, name) VALUES
     (6, 'Housing & Sublets'),
     (7, 'Other');
 
--- Hash of 'password123' made with db.hash_password()
+-- hash of 'password123' made with db.hash_password()
 INSERT INTO users (id, university_id, email, password_hash, first_name, last_name, bio, is_verified) VALUES
     (1, 1, 'shaan.demo@lakeheadu.ca',
         'pbkdf2_sha256$600000$b4b809d56b53788ae0f9118fddf9c467$09593deca27fa546cb71688868c316794caadefdefccc4467366c6684bb6a207',
@@ -30,7 +28,7 @@ INSERT INTO users (id, university_id, email, password_hash, first_name, last_nam
         'pbkdf2_sha256$600000$b4b809d56b53788ae0f9118fddf9c467$09593deca27fa546cb71688868c316794caadefdefccc4467366c6684bb6a207',
         'Muhid', 'Demo', NULL, 1);
 
--- Prices are in cents: 4500 = $45.00
+-- prices are in cents: 4500 = $45.00
 INSERT INTO listings (id, seller_id, category_id, title, description, price_cents, condition, status) VALUES
     (1, 1, 1, 'Intro to Algorithms (CLRS) 3rd Ed', 'Some highlighting, otherwise clean. Used for COMP 3413.', 4500, 'used', 'active'),
     (2, 2, 2, 'TI-84 Plus Calculator', 'Works perfectly, comes with batteries.', 6000, 'like_new', 'active'),
