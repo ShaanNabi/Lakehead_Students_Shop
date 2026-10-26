@@ -1,0 +1,20 @@
+# How to Run Lakehead Students Shop
+ 1. Start Flask (Terminal 1)
+bash
+python backend/app.py
+
+Keep this terminal running.
+
+ 2. Start Java (Terminal 2)
+
+javac main.java
+java main
+
+The marketplace window should open.
+
+ Troubleshooting
+- **Connection error:** Make sure Flask is running.
+- **Flask missing:** Run `python -m pip install -r requirements.txt`.
+- **Java not running:** Check that Java JDK 11+ is installed.
+
+**To stop:** Close the Java window and press `Ctrl + C` in the Flask terminal.
