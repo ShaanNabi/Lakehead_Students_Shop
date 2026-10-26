@@ -1,18 +1,11 @@
--- =============================================================
--- Lakehead Students Shop - SQLite schema
--- Run via: python backend/database/init_db.py
---
--- SQLite vs MySQL quick notes:
---   * INTEGER PRIMARY KEY auto-increments (no AUTO_INCREMENT needed)
---   * No real DATETIME type, dates are stored as TEXT 'YYYY-MM-DD HH:MM:SS'
---   * No ENUM, so CHECK (col IN (...)) does the same job
---   * Foreign keys are OFF by default, every connection must run
---     PRAGMA foreign_keys = ON;  (db.py does this for you)
--- =============================================================
+-- this file makes all the tables for the shop
+-- run it with python backend/database/init_db.py
 
+-- sqlite turns foreign keys off by default so we turn them on
 PRAGMA foreign_keys = ON;
 
--- Drop in reverse dependency order so a re-run starts clean
+-- delete old tables first so we always start fresh
+-- children get dropped before parents or sqlite complains
 DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS conversations;
 DROP TABLE IF EXISTS favorites;
@@ -22,139 +15,127 @@ DROP TABLE IF EXISTS categories;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS universities;
 
--- -------------------------------------------------------------
--- Universities: lets us add more schools later.
--- Only users whose email ends in email_domain can sign up.
--- -------------------------------------------------------------
+
+-- universities table so we can add more schools later
 CREATE TABLE universities (
-    id            INTEGER PRIMARY KEY,
-    name          TEXT NOT NULL UNIQUE,
-    email_domain  TEXT NOT NULL UNIQUE,          -- e.g. 'lakeheadu.ca'
-    created_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    id            INTEGER PRIMARY KEY,                           -- auto counts up like auto_increment in mysql
+    name          TEXT NOT NULL UNIQUE,                          -- school name, no repeats
+    email_domain  TEXT NOT NULL UNIQUE,                          -- like lakeheadu.ca
+    created_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP        -- sqlite has no date type so dates are text
 );
 
--- -------------------------------------------------------------
--- Users
--- -------------------------------------------------------------
+
+-- every student account
 CREATE TABLE users (
-    id             INTEGER PRIMARY KEY,
-    university_id  INTEGER NOT NULL REFERENCES universities(id),
-    email          TEXT NOT NULL UNIQUE COLLATE NOCASE,
-    password_hash  TEXT NOT NULL,                -- never store plain passwords
-    first_name     TEXT NOT NULL,
-    last_name      TEXT NOT NULL,
-    bio            TEXT,
-    is_verified    INTEGER NOT NULL DEFAULT 0 CHECK (is_verified IN (0, 1)),  -- SQLite has no BOOLEAN
-    created_at     TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    id             INTEGER PRIMARY KEY,                          -- user id
+    university_id  INTEGER NOT NULL REFERENCES universities(id), -- which school they go to
+    email          TEXT NOT NULL UNIQUE COLLATE NOCASE,          -- unique and ignores caps so ABC and abc match
+    password_hash  TEXT NOT NULL,                                -- scrambled password, never the real one
+    first_name     TEXT NOT NULL,                                -- first name
+    last_name      TEXT NOT NULL,                                -- last name
+    bio            TEXT,                                         -- optional about me
+    is_verified    INTEGER NOT NULL DEFAULT 0 CHECK (is_verified IN (0, 1)), -- no boolean in sqlite so 0 is no and 1 is yes
+    created_at     TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP       -- when they signed up
 );
 
--- Block any email that doesn't match the user's university domain.
--- A CHECK constraint can't look at another table, so we use a trigger.
+-- trigger runs before a new user gets saved
+-- it kills the insert if the email doesnt end with the school domain
 CREATE TRIGGER users_email_domain_insert
 BEFORE INSERT ON users
 BEGIN
-    SELECT RAISE(ABORT, 'Email must match your university domain')
-    WHERE lower(NEW.email) NOT LIKE '%@' || (
-        SELECT lower(email_domain) FROM universities WHERE id = NEW.university_id
+    SELECT RAISE(ABORT, 'Email must match your university domain') -- stop and throw this error
+    WHERE lower(NEW.email) NOT LIKE '%@' || (                      -- NEW means the row being added, % means anything
+        SELECT lower(email_domain) FROM universities WHERE id = NEW.university_id -- grab that school's domain
     );
 END;
 
+-- same check but for when someone edits their email or school
 CREATE TRIGGER users_email_domain_update
 BEFORE UPDATE OF email, university_id ON users
 BEGIN
-    SELECT RAISE(ABORT, 'Email must match your university domain')
-    WHERE lower(NEW.email) NOT LIKE '%@' || (
-        SELECT lower(email_domain) FROM universities WHERE id = NEW.university_id
+    SELECT RAISE(ABORT, 'Email must match your university domain') -- same error as above
+    WHERE lower(NEW.email) NOT LIKE '%@' || (                      -- same domain check
+        SELECT lower(email_domain) FROM universities WHERE id = NEW.university_id -- same lookup
     );
 END;
 
--- -------------------------------------------------------------
--- Categories (Textbooks, Electronics, Furniture, ...)
--- -------------------------------------------------------------
+
+-- item categories like textbooks or furniture
 CREATE TABLE categories (
-    id    INTEGER PRIMARY KEY,
-    name  TEXT NOT NULL UNIQUE
+    id    INTEGER PRIMARY KEY,                                   -- category id
+    name  TEXT NOT NULL UNIQUE                                   -- category name, no repeats
 );
 
--- -------------------------------------------------------------
--- Listings: the items for sale
--- Price is stored in cents (INTEGER) to avoid decimal rounding bugs.
--- $45.99 -> 4599
--- -------------------------------------------------------------
+
+-- the stuff people are selling
 CREATE TABLE listings (
-    id            INTEGER PRIMARY KEY,
-    seller_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    category_id   INTEGER NOT NULL REFERENCES categories(id),
-    title         TEXT NOT NULL CHECK (length(title) BETWEEN 1 AND 120),
-    description   TEXT NOT NULL DEFAULT '',
-    price_cents   INTEGER NOT NULL CHECK (price_cents >= 0),
-    condition     TEXT NOT NULL DEFAULT 'used'
-                  CHECK (condition IN ('new', 'like_new', 'used', 'fair')),
-    status        TEXT NOT NULL DEFAULT 'active'
-                  CHECK (status IN ('active', 'sold', 'removed')),
-    created_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    id            INTEGER PRIMARY KEY,                                         -- listing id
+    seller_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,     -- who posted it, if they delete their account this goes too
+    category_id   INTEGER NOT NULL REFERENCES categories(id),                  -- what category it's in
+    title         TEXT NOT NULL CHECK (length(title) BETWEEN 1 AND 120),       -- title cant be empty or super long
+    description   TEXT NOT NULL DEFAULT '',                                    -- details, blank if they skip it
+    price_cents   INTEGER NOT NULL CHECK (price_cents >= 0),                   -- price in cents so 4599 is 45.99, no negatives
+    condition     TEXT NOT NULL DEFAULT 'used'                                 -- item condition, used if not given
+                  CHECK (condition IN ('new', 'like_new', 'used', 'fair')),    -- only these words allowed, works like enum
+    status        TEXT NOT NULL DEFAULT 'active'                               -- new posts start active
+                  CHECK (status IN ('active', 'sold', 'removed')),             -- only these 3 allowed
+    created_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,                     -- when it was posted
+    updated_at    TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP                      -- last time it got edited
 );
 
--- Keep updated_at fresh on every edit
+-- auto updates updated_at whenever a listing changes
 CREATE TRIGGER listings_touch_updated_at
 AFTER UPDATE ON listings
 FOR EACH ROW
-WHEN NEW.updated_at = OLD.updated_at
+WHEN NEW.updated_at = OLD.updated_at                                           -- only if nobody set it already, stops an infinite loop
 BEGIN
-    UPDATE listings SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    UPDATE listings SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;      -- stamp the time
 END;
 
--- -------------------------------------------------------------
--- Listing images: one listing can have many photos.
--- We store the file path/URL, not the image itself.
--- -------------------------------------------------------------
+
+-- pics for each listing, one listing can have a bunch
 CREATE TABLE listing_images (
-    id          INTEGER PRIMARY KEY,
-    listing_id  INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
-    image_path  TEXT NOT NULL,
-    sort_order  INTEGER NOT NULL DEFAULT 0
+    id          INTEGER PRIMARY KEY,                                           -- image id
+    listing_id  INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,    -- which listing, pics go if listing goes
+    image_path  TEXT NOT NULL,                                                 -- where the file lives, we dont store the actual image
+    sort_order  INTEGER NOT NULL DEFAULT 0                                     -- 0 shows first, then 1, 2 and so on
 );
 
--- -------------------------------------------------------------
--- Favorites: many-to-many between users and listings.
--- Composite primary key = a user can't favorite the same thing twice.
--- -------------------------------------------------------------
+
+-- saved items, links users and listings together
 CREATE TABLE favorites (
-    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    listing_id  INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
-    created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, listing_id)
+    user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,       -- who saved it
+    listing_id  INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,    -- what they saved
+    created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,                       -- when they saved it
+    PRIMARY KEY (user_id, listing_id)                                          -- this pair is the key so you cant save the same thing twice
 );
 
--- -------------------------------------------------------------
--- Messaging: one conversation per (listing, buyer).
--- The seller is found through listings.seller_id.
--- -------------------------------------------------------------
+
+-- a chat between a buyer and a seller about one listing
 CREATE TABLE conversations (
-    id          INTEGER PRIMARY KEY,
-    listing_id  INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
-    buyer_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (listing_id, buyer_id)
+    id          INTEGER PRIMARY KEY,                                           -- chat id
+    listing_id  INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,    -- the item they're talking about
+    buyer_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,       -- the buyer, seller comes from the listing
+    created_at  TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,                       -- when the chat started
+    UNIQUE (listing_id, buyer_id)                                              -- one chat per buyer per item
 );
 
+-- each message inside a chat
 CREATE TABLE messages (
-    id               INTEGER PRIMARY KEY,
-    conversation_id  INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
-    sender_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    body             TEXT NOT NULL CHECK (length(body) > 0),
-    sent_at          TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    read_at          TEXT                         -- NULL = unread
+    id               INTEGER PRIMARY KEY,                                      -- message id
+    conversation_id  INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE, -- which chat it's in
+    sender_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,  -- who sent it
+    body             TEXT NOT NULL CHECK (length(body) > 0),                   -- the text, cant be empty
+    sent_at          TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,                  -- when it was sent
+    read_at          TEXT                                                      -- null means not read yet
 );
 
--- -------------------------------------------------------------
--- Indexes: speed up the queries the site runs the most
--- -------------------------------------------------------------
-CREATE INDEX idx_listings_status_created ON listings(status, created_at DESC);
-CREATE INDEX idx_listings_category       ON listings(category_id);
-CREATE INDEX idx_listings_seller         ON listings(seller_id);
-CREATE INDEX idx_listing_images_listing  ON listing_images(listing_id, sort_order);
-CREATE INDEX idx_favorites_listing       ON favorites(listing_id);
-CREATE INDEX idx_messages_conversation   ON messages(conversation_id, sent_at);
-CREATE INDEX idx_conversations_buyer     ON conversations(buyer_id);
+
+-- indexes make searches faster, kinda like a book index
+CREATE INDEX idx_listings_status_created ON listings(status, created_at DESC);    -- homepage feed of newest active stuff
+CREATE INDEX idx_listings_category       ON listings(category_id);                -- filtering by category
+CREATE INDEX idx_listings_seller         ON listings(seller_id);                  -- showing a user's listings
+CREATE INDEX idx_listing_images_listing  ON listing_images(listing_id, sort_order); -- loading a listing's pics in order
+CREATE INDEX idx_favorites_listing       ON favorites(listing_id);                -- counting who saved something
+CREATE INDEX idx_messages_conversation   ON messages(conversation_id, sent_at);   -- loading a chat in order
+CREATE INDEX idx_conversations_buyer     ON conversations(buyer_id);              -- finding a user's chats
