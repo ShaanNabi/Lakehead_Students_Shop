@@ -1,4 +1,7 @@
 
+import com.google.gson.JsonElement; // holds the JSON info in java
+import com.google.gson.JsonObject; // allows us to acsess values by finding their keys
+import com.google.gson.JsonParser; // reads and understand the JSON text
 import javax.swing.*;  // imports all GUI stuff we want buttons, interface etc.
 import javax.swing.table.DefaultTableModel; // table component adds the data in the rows, columns etc.
 import java.awt.*; // helps with GUI fonts, colours and layout
@@ -12,12 +15,8 @@ import java.net.http.HttpResponse; // what flask responds with
 import java.nio.charset.StandardCharsets;// translates into computer language human text
 import java.time.Duration; // time limit that java allows flask to respond
 import java.util.ArrayList; // tools from data structures that allow organaizng and storing data
-import java.util.HashMap; //
 import java.util.List;//
 import java.util.Locale;// handles regional fromats currency, time etc.
-import java.util.Map;
-import java.util.regex.Matcher; // extracts data from what flasks says.
-import java.util.regex.Pattern; // what we are actually looing for
 
 
 // this is where the window the popup is GUI and everything is being built
@@ -275,233 +274,89 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
         }.execute(); // runs the background task the swing worker is gonna do
     }
 
-    // Opens a dialog containing product information
-    private void showListing(Listing item) {
+    // Opens a box that has product information
+    private void showListing(Listing item) { // we recive an item
 
-        JTextArea details = new JTextArea(
+        JTextArea details = new JTextArea( // items details in a text area, Area can have multiple lines field only one
 
-                "Item: " + item.title + "\n" +
+                "Item: " + item.title + "\n" + // title
 
-                "Price: " + String.format(
+                "Price: " + String.format( // price using canadian money
                         Locale.CANADA,
-                        "$%.2f",
+                        "$%.2f", // rounding
                         item.priceCents / 100.0
                 ) + "\n" +
 
-                "Category: " + item.category + "\n" +
+                "Category: " + item.category + "\n" + // category 
 
                 "Condition: " +
-                        item.condition.replace('_', ' ') + "\n" +
+                        item.condition.replace('_', ' ') + "\n" + // switch from x_x to x x
 
-                "Seller: " + item.seller + "\n\n" +
+                "Seller: " + item.seller + "\n\n" + // whos selling it
 
-                "Description:\n" + item.description
+                "Description:\n" + item.description // item description
         );
 
-        details.setEditable(false);
-        details.setLineWrap(true);
-        details.setWrapStyleWord(true);
+        details.setEditable(false); // cannot edit one of the dunctions of JtextArea
+        details.setLineWrap(true);  // move to next line if needed
+        details.setWrapStyleWord(true); //keeps words together insetad of sending half a word to the next line if needed the whole word will be sent
 
-        details.setBackground(
-                UIManager.getColor("Panel.background")
+        details.setBackground( // details is our box we are setting the background
+                UIManager.getColor("Panel.background") // panel.background is the default that swing uses so that details isnt a different colour than the other part of the window
         );
 
-        JOptionPane.showMessageDialog(
-                this,
-                details,
-                "Listing details",
-                JOptionPane.INFORMATION_MESSAGE
+        JOptionPane.showMessageDialog( // swing builder to make a popup
+                this, // for our window
+                details, // this specifc box
+                "Listing details", // title
+                JOptionPane.INFORMATION_MESSAGE // type of icon like the other one did error this does information
         );
     }
-
-    // Finds field names and values inside JSON
-    // This simple parser is for the flat JSON objects
-    // returned by the current listings endpoint.
-    private static final Pattern FIELD = Pattern.compile(
-            "\"([A-Za-z_][A-Za-z_0-9]*)\"\\s*:\\s*" +
-            "(\"((?:\\\\.|[^\"\\\\])*)\"|" +
-            "-?\\d+(?:\\.\\d+)?|true|false|null)"
-    );
 
     // Converts JSON response into a list of products
     private static List<Listing> parseListings(String json) {
 
-        if (!json.trim().startsWith("[")) {
-
-            throw new IllegalArgumentException(
+        JsonElement result = JsonParser.parseString(json); // we take the data from flask as a JSON and using the parser convert it into GSON something java can work with
+        if (!result.isJsonArray()) { // if wha we receive isnt a list of listing
+            throw new IllegalArgumentException( // throw an exception
                     "Expected a JSON list from the server"
             );
         }
 
-        List<Listing> listings = new ArrayList<>();
-
-        int start = -1;
-        int depth = 0;
-
-        boolean inString = false;
-        boolean escaped = false;
+        List<Listing> listings = new ArrayList<>(); // create an empty list for the info were about to get
 
         // Identify each listing object in the JSON array
-        for (int i = 0; i < json.length(); i++) {
+        for (int i = 0; i < result.getAsJsonArray().size(); i++) {
+        JsonElement element = result.getAsJsonArray().get(i);
+            if (!element.isJsonObject()) {
+                throw new IllegalArgumentException("Expected a JSON listing object");
+            }
 
-            char c = json.charAt(i);
-
-            if (inString) {
-
-                if (escaped) {
-                    escaped = false;
-                } else if (c == '\\') {
-                    escaped = true;
-                } else if (c == '"') {
-                    inString = false;
-                }
-
-            } else if (c == '"') {
-
-                inString = true;
-
-            } else if (c == '{') {
-
-                if (depth++ == 0) {
-                    start = i;
-                }
-
-            } else if (c == '}') {
-
-                if (--depth == 0 && start >= 0) {
-
-                    String object = json.substring(
-                            start,
-                            i + 1
-                    );
-
-                    Map<String, String> fields = new HashMap<>();
-
-                    Matcher matcher = FIELD.matcher(object);
-
-                    while (matcher.find()) {
-
-                        String value = matcher.group(3) != null
-                                ? unescapeJson(matcher.group(3))
-                                : matcher.group(2);
-
-                        fields.put(
-                                matcher.group(1),
-                                "null".equals(value) ? "" : value
-                        );
-                    }
-
-                    if (!fields.containsKey("title") ||
-                            !fields.containsKey("price_cents")) {
-
-                        throw new IllegalArgumentException(
-                                "Missing listing fields"
-                        );
-                    }
+            JsonObject fields = element.getAsJsonObject();
+            if (!hasValue(fields, "title") || !hasValue(fields, "price_cents")) {
+                throw new IllegalArgumentException("Missing listing fields");
+            }
 
                     // Create a Java product object
-                    listings.add(new Listing(
-
-                            fields.get("title"),
-
-                            Integer.parseInt(
-                                    fields.get("price_cents")
-                            ),
-
-                            fields.getOrDefault(
-                                    "category_name", ""
-                            ),
-
-                            fields.getOrDefault(
-                                    "condition", ""
-                            ),
-
-                            fields.getOrDefault(
-                                    "seller_name", ""
-                            ),
-
-                            fields.getOrDefault(
-                                    "description", ""
-                            )
-                    ));
-                }
-            }
-        }
-
-        if (depth != 0 || inString) {
-
-            throw new IllegalArgumentException(
-                    "Malformed JSON response"
-            );
+            listings.add(new Listing(
+                    fields.get("title").getAsString(),
+                    fields.get("price_cents").getAsInt(),
+                    getString(fields, "category_name"),
+                    getString(fields, "condition"),
+                    getString(fields, "seller_name"),
+                    getString(fields, "description")
+            ));
         }
 
         return listings;
     }
 
-    // Converts escaped JSON characters into normal text
-    private static String unescapeJson(String s) {
+    private static boolean hasValue(JsonObject fields, String key) {
+        return fields.has(key) && !fields.get(key).isJsonNull();
+    }
 
-        StringBuilder result = new StringBuilder();
-
-        for (int i = 0; i < s.length(); i++) {
-
-            char c = s.charAt(i);
-
-            if (c != '\\' || i + 1 >= s.length()) {
-
-                result.append(c);
-                continue;
-            }
-
-            char next = s.charAt(++i);
-
-            switch (next) {
-
-                case 'n':
-                    result.append('\n');
-                    break;
-
-                case 'r':
-                    result.append('\r');
-                    break;
-
-                case 't':
-                    result.append('\t');
-                    break;
-
-                case 'b':
-                    result.append('\b');
-                    break;
-
-                case 'f':
-                    result.append('\f');
-                    break;
-
-                case 'u':
-
-                    if (i + 4 >= s.length()) {
-
-                        throw new IllegalArgumentException(
-                                "Invalid Unicode escape"
-                        );
-                    }
-
-                    result.append(
-                            (char) Integer.parseInt(
-                                    s.substring(i + 1, i + 5),
-                                    16
-                            )
-                    );
-
-                    i += 4;
-                    break;
-
-                default:
-                    result.append(next);
-            }
-        }
-
-        return result.toString();
+    private static String getString(JsonObject fields, String key) {
+        return hasValue(fields, key) ? fields.get(key).getAsString() : "";
     }
 
     // Represents one marketplace listing
