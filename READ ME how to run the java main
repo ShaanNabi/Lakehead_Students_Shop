@@ -1,20 +1,23 @@
-# How to Run Lakehead Students Shop
- 1. Start Flask (Terminal 1)
-bash
+ How to Run Lakehead Students Shop
+
+1. Start Flask (Terminal 1)
 python backend/app.py
-
 Keep this terminal running.
+2. Start Java (Terminal 2)
+javac -cp ".;lib/gson-2.15.0.jar" main.java
+java -cp ".;lib/gson-2.15.0.jar" main
 
- 2. Start Java (Terminal 2)
-
-javac main.java
-java main
 
 The marketplace window should open.
 
- Troubleshooting
+Requirements
+- Java JDK 11+
+- Python with Flask installed
+- Gson library in `lib/gson-2.15.0.jar`
+
+Troubleshooting
 - **Connection error:** Make sure Flask is running.
 - **Flask missing:** Run `python -m pip install -r requirements.txt`.
-- **Java not running:** Check that Java JDK 11+ is installed.
+- **Gson error:** Make sure the Gson `.jar` file is inside the `lib` folder.
 
-**To stop:** Close the Java window and press `Ctrl + C` in the Flask terminal.
+To stop: Close the Java window and press `Ctrl + C` in the Flask terminal.
