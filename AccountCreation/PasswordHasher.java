@@ -1,5 +1,3 @@
-package p2;
-
 import java.security.SecureRandom;
 import java.security.spec.KeySpec;
 import java.util.Base64;
