@@ -393,7 +393,7 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
     public static void main(String[] args) {
 
         SwingUtilities.invokeLater( // makes it so that swing runs everything correctly
-                () -> new main().setVisible(true) // displays everything we just made into that windoe w
+                () -> new LoginScreen().setVisible(true) // displays everything we just made into that windoe w
         );
     }
 }
