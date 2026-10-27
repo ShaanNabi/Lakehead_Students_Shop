@@ -1,23 +1,45 @@
- How to Run Lakehead Students Shop
 
-1. Start Flask (Terminal 1)
+Lakehead Students Shop — How to Run
+Requirements:
+- Java JDK
+- Python
+- MySQL Server
+- Gson and MySQL Connector/J JAR files in the lib folder
+
+make sure you have MYSQL and the loginsystem database is working: If it is not use this code:
+CREATE TABLE accounts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE, email VARCHAR(254) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL
+); 
+
+Step 1: Install Python needed stuff
+
+Open a terminal in the project folder and run:
+
+python -m pip install -r requirements.txt
+
+Step 2: Start the Python Backend
+
+In the first terminal, run this to start up the flask:
+
 python backend/app.py
-Keep this terminal running.
-2. Start Java (Terminal 2)
-javac -cp ".;lib/gson-2.15.0.jar" main.java
-java -cp ".;lib/gson-2.15.0.jar" main
 
+Keep this terminal running and open a new terminal.
 
-The marketplace window should open.
+Step 3: Compile Java
 
-Requirements
-- Java JDK 11+
-- Python with Flask installed
-- Gson library in `lib/gson-2.15.0.jar`
+Open another terminal in the project folder and run:
 
-Troubleshooting
-- **Connection error:** Make sure Flask is running.
-- **Flask missing:** Run `python -m pip install -r requirements.txt`.
-- **Gson error:** Make sure the Gson `.jar` file is inside the `lib` folder.
+javac -cp ".;lib/*" -d . main.java AccountCreation/*.java
 
-To stop: Close the Java window and press `Ctrl + C` in the Flask terminal.
+Step 4: Run the Application
+
+java -cp ".;lib/*" main
+
+The login screen should open. You can log in or create an account.
+
+After successfully logging in, the marketplace will open.
+
+Note:
+MySQL handles user accounts, while Python Flask and SQLite handle marketplace listings. Keep the Flask backend running while using the application.
