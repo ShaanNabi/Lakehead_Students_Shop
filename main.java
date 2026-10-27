@@ -327,17 +327,17 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
 
         // Identify each listing object in the JSON array
         for (int i = 0; i < result.getAsJsonArray().size(); i++) {
-        JsonElement element = result.getAsJsonArray().get(i);
+        JsonElement element = result.getAsJsonArray().get(i); // we loop through the array of elements we got then we get the element from get (i) which is the item we want and store it in element
             if (!element.isJsonObject()) {
-                throw new IllegalArgumentException("Expected a JSON listing object");
+                throw new IllegalArgumentException("Expected a JSON listing object"); // throws error if we dont get a JSON object like we should
             }
 
-            JsonObject fields = element.getAsJsonObject();
+            JsonObject fields = element.getAsJsonObject(); // allows us to acsess the elemnts through JSON so we can extract the keys and values
             if (!hasValue(fields, "title") || !hasValue(fields, "price_cents")) {
-                throw new IllegalArgumentException("Missing listing fields");
+                throw new IllegalArgumentException("Missing listing fields"); // if the key does not have a title or price_cents throw error
             }
 
-                    // Create a Java product object
+                    // Create a Java product object using all the data we just got
             listings.add(new Listing(
                     fields.get("title").getAsString(),
                     fields.get("price_cents").getAsInt(),
@@ -351,17 +351,18 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
         return listings;
     }
 
-    private static boolean hasValue(JsonObject fields, String key) {
-        return fields.has(key) && !fields.get(key).isJsonNull();
+    private static boolean hasValue(JsonObject fields, String key) { // checking if the current object has value
+        return fields.has(key) && !fields.get(key).isJsonNull(); // checking if the key value is not null
     }
 
-    private static String getString(JsonObject fields, String key) {
+    private static String getString(JsonObject fields, String key) { // check if we have a value in the sting if so get it if not return empty string
         return hasValue(fields, key) ? fields.get(key).getAsString() : "";
     }
 
-    // Represents one marketplace listing
+    // Represents one marketplace listing and setting all the things you need to define a listing
     private static class Listing {
 
+        //variables needed to make a listing
         final String title;
         final String category;
         final String condition;
@@ -370,7 +371,7 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
 
         final int priceCents;
 
-        Listing(
+        Listing( // listing constructor
                 String title,
                 int priceCents,
                 String category,
@@ -379,7 +380,7 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
                 String description
         ) {
 
-            this.title = title;
+            this.title = title; // this referes ti the the current object being made instead of the consturctot
             this.priceCents = priceCents;
             this.category = category;
             this.condition = condition;
@@ -388,11 +389,11 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
         }
     }
 
-    // Entry point of the application
+    // Entry point of the application where the application starts running
     public static void main(String[] args) {
 
-        SwingUtilities.invokeLater(
-                () -> new main().setVisible(true)
+        SwingUtilities.invokeLater( // makes it so that swing runs everything correctly
+                () -> new main().setVisible(true) // displays everything we just made into that windoe w
         );
     }
 }
