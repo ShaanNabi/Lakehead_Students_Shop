@@ -390,10 +390,9 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
     }
 
     // Entry point of the application where the application starts running
-    public static void main(String[] args) {
-
-        SwingUtilities.invokeLater( // makes it so that swing runs everything correctly
-                () -> new LoginScreen().setVisible(true) // displays everything we just made into that windoe w
-        );
-    }
+public static void main(String[] args) {
+    SwingUtilities.invokeLater(() -> {
+        new LoginScreen().setVisible(true);
+    });
+}
 }
