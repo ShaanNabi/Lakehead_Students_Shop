@@ -1,5 +1,3 @@
-package p2;
-
 import javax.swing.*;
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
