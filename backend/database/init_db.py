@@ -1,7 +1,7 @@
 # this builds the database file from schema.sql and seed.sql
-# python backend/database/init_db.py makes tables plus demo data
-# python backend/database/init_db.py --no-seed makes empty tables only
-# heads up it wipes whatever was in the db before
+# python init_db.py makes tables plus demo data
+# python init_db.py --no-seed makes empty tables only
+# it wipes whatever was in the db before
 
 import sqlite3            # python's built in sqlite library
 import sys                # lets us read stuff typed after the command

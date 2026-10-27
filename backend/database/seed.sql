@@ -23,13 +23,13 @@ INSERT INTO users (id, university_id, email, password_hash, first_name, last_nam
         'Shaan', 'Nabi', '3rd year CS. Selling old textbooks.', 1),
     (2, 1, 'zack.demo@lakeheadu.ca',                 -- zack
         'pbkdf2_sha256$600000$b4b809d56b53788ae0f9118fddf9c467$09593deca27fa546cb71688868c316794caadefdefccc4467366c6684bb6a207',
-        'Zack', 'Demo', NULL, 1),
+        'Zack', 'Hughes-Junkala', NULL, 1),
     (3, 1, 'ahmed.demo@lakeheadu.ca',                -- ahmed
         'pbkdf2_sha256$600000$b4b809d56b53788ae0f9118fddf9c467$09593deca27fa546cb71688868c316794caadefdefccc4467366c6684bb6a207',
         'Ahmed', 'Ikki', NULL, 1),
     (4, 1, 'muhid.demo@lakeheadu.ca',                -- muhid
         'pbkdf2_sha256$600000$b4b809d56b53788ae0f9118fddf9c467$09593deca27fa546cb71688868c316794caadefdefccc4467366c6684bb6a207',
-        'Muhid', 'Demo', NULL, 1);
+        'Muhid', 'Shafqat', NULL, 1);
 
 -- add some listings, prices are in cents so 4500 is 45.00
 -- columns go id, seller, category, title, description, price, condition, status
