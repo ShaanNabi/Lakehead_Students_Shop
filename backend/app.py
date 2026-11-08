@@ -67,6 +67,24 @@ def login():
     session["user_id"] = user["id"]                                                     # save who they are in the cookie
     return jsonify(user=to_dict(db.get_user(db.get_db(), user["id"])))                  # send back their info
 
+@app.post("/api/dev-login")
+def dev_login():
+    data = request.get_json(silent=True) or {}
+
+    email = data.get("email", "").strip()
+
+    if not email:
+        return jsonify(error="Email is required"), 400
+
+    user = db.get_user_by_email(db.get_db(), email)
+
+    if user is None:
+        return jsonify(error="No matching SQLite account found"), 404
+
+    session["user_id"] = user["id"]
+
+    return jsonify(success=True, user_id=user["id"])
+
 
 # log out
 @app.post("/api/logout")
