@@ -2,6 +2,7 @@
 import com.google.gson.JsonElement; // holds the JSON info in java
 import com.google.gson.JsonObject; // allows us to acsess values by finding their keys
 import com.google.gson.JsonParser; // reads and understand the JSON text
+import com.google.gson.Gson; 
 import javax.swing.*;  // imports all GUI stuff we want buttons, interface etc.
 import javax.swing.table.DefaultTableModel; // table component adds the data in the rows, columns etc.
 import java.awt.*; // helps with GUI fonts, colours and layout
@@ -31,9 +32,10 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
     private final JTextField searchField = new JTextField(22); // creating the search bar for people to type
     private final JButton searchButton = new JButton("Search"); // search excution button
     private final JButton refreshButton = new JButton("Refresh"); // refresh button
+    private final JButton createListingButton = new JButton("Create Listing"); //create listing button
     private final JLabel statusLabel = new JLabel("Ready"); // status label tells user whats happening whats being found or not
 // none of these are programmed to do anything yet. Just starting off by creating the buttons
-
+    private final int userID; //user id to help differentiate users
 
     // Table that displays products
     private final DefaultTableModel tableModel =
@@ -59,10 +61,10 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
     private List<Listing> displayedListings = new ArrayList<>(); // here we are creating a list of listings in displayedlistings and creating an empty arraylist
 
     // Constructor: creates the marketplace window
-    public main() {
-
+    public main(int userID) {
+    	
         super("Lakehead Students Shop"); // calls jframe to build our window called lakehead students shop
-
+        this.userID = userID;
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // X buttons closes window
         setSize(900, 500); // popup window size
         setLocationRelativeTo(null); // centering the window on screen by saying null, no reference so just centre it
@@ -86,6 +88,7 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
         controls.add(searchField); // adds our created search bar
         controls.add(searchButton); // adds our search button
         controls.add(refreshButton); // adds our refresh button
+        controls.add(createListingButton); //adds create listing button
 
         // Add heading and search controls into one container at the top so we can organize where each part goes in that box
         JPanel top = new JPanel(new BorderLayout(0, 8));
@@ -123,6 +126,9 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
             searchField.setText(""); // search bar wiped
             loadListings(); // and we load the listings
         });
+        
+        //allows the user to create a listing
+        createListingButton.addActionListener(e -> createListing());
 
         // we are adding mouse functionality. when a user does something with the mouse we tell java to listen to it
         table.addMouseListener(new MouseAdapter() {
@@ -312,6 +318,114 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
                 JOptionPane.INFORMATION_MESSAGE // type of icon like the other one did error this does information
         );
     }
+    //create the listing
+    private void createListing() {
+    	//use JDialog to create a popup window
+    	JDialog dialog = new JDialog(this, "Create Listing", true);
+    	
+    	dialog.setSize(450, 450);
+    	dialog.setLocationRelativeTo(this);
+    	dialog.setLayout(new BorderLayout(10, 10));
+    	
+    	JPanel form = new JPanel(new GridLayout(0, 2, 10, 10));
+    	//title
+    	JTextField titleField = new JTextField();
+    	//description
+    	JTextArea descriptionArea = new JTextArea(4, 20);
+    	descriptionArea.setLineWrap(true);
+    	descriptionArea.setWrapStyleWord(true);
+    	//price
+    	JTextField priceField = new JTextField();
+    	//category
+    	JComboBox<String> categoryBox = new JComboBox<>(
+    		new String[] {
+    				"Textbooks",
+    				"Electronics",
+    				"Furniture",
+    				"School Supplies",
+    				"Clothing",
+    				"Housing and Sublets",
+    				"Other"
+    		}
+    	);
+    	//condition
+    	JComboBox<String> conditionBox = new JComboBox<>(
+    			new String[] {
+    				"New",
+    				"Like new",
+    				"Used",
+    				"Fair"
+    		}
+    	);
+    	//add all our information
+    	form.add(new JLabel("Item Title"));
+    	form.add(titleField);
+    	form.add(new JLabel("Description: "));
+    	form.add(descriptionArea);
+    	form.add(new JLabel("Price ($): "));
+    	form.add(priceField);
+    	form.add(new JLabel("Category: "));
+    	form.add(categoryBox);
+    	form.add(new JLabel("Condition: "));
+    	form.add(conditionBox);
+    	JButton submitButton = new JButton ("Post Listing");
+    	submitButton.addActionListener(e -> {
+    		String title = titleField.getText().trim();
+    		String description = descriptionArea.getText().trim();
+    		String priceText = priceField.getText().trim();
+    		//check if title or price are empty
+    		if (title.isEmpty() || priceText.isEmpty()) {
+    			JOptionPane.showMessageDialog(dialog, "Please enter a title and price");
+    			return;
+    		}
+    		try {
+    			double price = Double.parseDouble(priceText);
+    			//make sure price is not negative
+    			if (price < 0) {
+    				JOptionPane.showMessageDialog(dialog, "Price cannot be negative");
+    				return;
+    			}
+    			int categoryID = categoryBox.getSelectedIndex() + 1;
+    			String condition = conditionBox.getSelectedItem().toString().toLowerCase().replace(" ", "_");
+    			postListing(title, description, price, categoryID, condition, dialog);
+     		} catch(NumberFormatException ex) {
+     			JOptionPane.showMessageDialog(dialog, "Please enter a valid price.");
+     		}
+    	});
+    	dialog.add(form, BorderLayout.CENTER);
+    	dialog.add(submitButton, BorderLayout.SOUTH);
+    	dialog.setVisible(true);
+    }
+    //post the listing to the main gui 
+    private void postListing(String title, String description, double price, int categoryID, String condition, JDialog dialog) {
+    	try {
+    		Gson gson = new Gson();
+    		JsonObject data = new JsonObject();
+    		data.addProperty("title", title);
+    		data.addProperty("description", description);
+    		data.addProperty("price", price);
+    		data.addProperty("category_id", categoryID);
+    		data.addProperty("condition", condition);
+    		System.out.println("Sending listing data: " + gson.toJson(data));
+    		HttpRequest request = HttpRequest.newBuilder()
+    				.uri(URI.create("http://127.0.0.1:5000/api/listings"))
+    				.header("Content-Type", "application/json")
+    				.POST(HttpRequest.BodyPublishers.ofString(gson.toJson(data)))
+    				.build();
+    		HttpResponse<String> response = ApiClient.client.send(request, HttpResponse.BodyHandlers.ofString());
+    		
+    		if (response.statusCode() == 201) {
+    			JOptionPane.showMessageDialog(dialog, "Listing created successfully!");
+    			dialog.dispose();
+    			loadListings();
+    		} else {
+    			JOptionPane.showMessageDialog(dialog, "Could not create listing:\n" + response.body());
+    		}
+    	} catch(Exception ex) {
+    		ex.printStackTrace();
+    		JOptionPane.showMessageDialog(dialog, "Could not connect to the marketplace server.");
+    	}
+    }
 
     // Converts JSON response into a list of products
     private static List<Listing> parseListings(String json) {
@@ -380,7 +494,7 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
                 String description
         ) {
 
-            this.title = title; // this referes ti the the current object being made instead of the consturctot
+            this.title = title; // this refers it to the current object being made instead of the consturctot
             this.priceCents = priceCents;
             this.category = category;
             this.condition = condition;
@@ -390,9 +504,10 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
     }
 
     // Entry point of the application where the application starts running
-public static void main(String[] args) {
-    SwingUtilities.invokeLater(() -> {
-        new LoginScreen().setVisible(true);
-    });
-}
+    public static void main(String[] args) {
+
+        SwingUtilities.invokeLater( // makes it so that swing runs everything correctly
+                () -> new LoginScreen().setVisible(true) // displays everything we just made into that window
+        );
+    }
 }
