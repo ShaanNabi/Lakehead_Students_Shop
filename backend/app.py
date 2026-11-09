@@ -155,6 +155,52 @@ def new_listing():
     return jsonify(id=listing_id), 201
 
 
+@app.put("/api/listings/<int:listing_id>")
+@login_required
+def edit_listing(listing_id):
+    data = request.get_json(silent=True) or {}
+    title = data.get("title", "").strip()
+    description = data.get("description", "").strip()
+    category_id = data.get("category_id")
+    condition = data.get("condition", "used")
+    try:
+        price = float(data.get("price"))
+        category_id = int(category_id)
+        if price < 0:
+            raise ValueError()
+    except (TypeError, ValueError):
+        return jsonify(error="Invalid price or category"), 400
+    if not title:
+        return jsonify(error="Title is required"), 400
+    price_cents = round(price * 100)
+    updated = db.update_listing(
+        db.get_db(),
+        listing_id,
+        session["user_id"],
+        category_id,
+        title,
+        price_cents,
+        description,
+        condition
+    )
+    if not updated:
+        return jsonify(error="Listing not found or you do not own it"), 404
+    return jsonify(success=True)
+
+
+@app.delete("/api/listings/<int:listing_id>")
+@login_required
+def delete_listing(listing_id):
+    deleted = db.remove_listing(
+        db.get_db(),
+        listing_id,
+        session["user_id"]
+    )
+    if not deleted:
+        return jsonify(error="Listing not found or you do not own it"), 404
+    return jsonify(success=True)
+
+
 # mark a listing active, sold or removed
 @app.post("/api/listings/<int:listing_id>/status")
 @login_required
