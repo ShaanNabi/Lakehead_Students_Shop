@@ -311,12 +311,15 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
                 UIManager.getColor("Panel.background") // panel.background is the default that swing uses so that details isnt a different colour than the other part of the window
         );
         
-       Object[]options;
+       // we are creating the buttons that will show up in the popup
+       Object[] options; 
        
        if (isOwner) {
+    	   // if you own the listing you can edit or delete it
     	   options = new Object[] {"Close", "Edit Listing", "Delete Listing."};
        } else {
-    	   options = new Object[] {"Close"};
+    	   // if you don't own it, you can only message the seller now
+    	   options = new Object[] {"Close", "Message Seller"};
        }
 
        int choice = JOptionPane.showOptionDialog( // swing builder to make a popup
@@ -329,10 +332,15 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
                 options,
                 options[0]
         );
+            // checking which button the user clicked
        if (isOwner && choice == 1) {
-    	   editListing(item);
+    	   editListing(item); // clicked edit
        } else if (isOwner && choice == 2) {
-    	   deleteListing(item.id);
+    	   deleteListing(item.id); // clicked delete
+       } else if (!isOwner && choice == 1) {
+           // they clicked "Message Seller" so we open the new chat window we just made
+           MessageWindow chat = new MessageWindow(this, item.id, item.seller, item.title);
+           chat.setVisible(true); // makes the window pop up
        }
     }
     //create the listing
