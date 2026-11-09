@@ -188,6 +188,38 @@ def create_listing(db, seller_id, category_id, title, price_cents,
     db.commit()                                                                # save both
     return listing_id
 
+def update_listing(db, listing_id, seller_id, category_id, title, price_cents, description, condition):
+    cur = db.execute(
+        """UPDATE listings
+           SET category_id = ?,
+               title = ?,
+               description = ?,
+               price_cents = ?,
+               condition = ?,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = ?
+           AND seller_id = ?
+           AND status = 'active'""",
+        (category_id, title.strip(), description.strip(),
+         price_cents, condition, listing_id, seller_id),
+    )
+    db.commit()
+    return cur.rowcount > 0
+
+
+def remove_listing(db, listing_id, seller_id):
+    cur = db.execute(
+        """UPDATE listings
+           SET status = 'removed',
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = ?
+           AND seller_id = ?
+           AND status = 'active'""",
+        (listing_id, seller_id),
+    )
+    db.commit()
+    return cur.rowcount > 0
+
 
 # sets a listing to active, sold or removed, only works if you're the seller
 def set_listing_status(db, listing_id, seller_id, status):
