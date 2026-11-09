@@ -80,16 +80,22 @@ private void checkInput() {
         return;
     }
     //connect to the SQL server to get the information for the accounts
-    String sql = "SELECT password_hash FROM accounts WHERE username = ?";
+    String sql = "SELECT id, email, password_hash FROM accounts WHERE username = ?";
     try (Connection connection = DatabaseConnection.getConnection();
          PreparedStatement statement = connection.prepareStatement(sql)) {
         statement.setString(1, username);
         try (ResultSet result = statement.executeQuery()) {
             if (result.next()) {
+            	int userID = result.getInt("id");
                 String storedHash = result.getString("password_hash");
+                String email = result.getString("email");
                 if (PasswordHasher.verifyPassword(password, storedHash)) {
+                	int sqliteUserID = ApiClient.loginToFlask(email);
+                	if (sqliteUserID == -1) {
+                		messageLabel.setText("Could not connect your account to the marketplace");
+                	}
                     messageLabel.setText("Login successful!");
-                    main marketplace = new main();
+                    main marketplace = new main(sqliteUserID);
                     marketplace.setVisible(true);
                     dispose();
                 } else {
