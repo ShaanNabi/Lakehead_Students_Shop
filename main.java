@@ -1,4 +1,4 @@
-
+package p2;
 import com.google.gson.JsonElement; // holds the JSON info in java
 import com.google.gson.JsonObject; // allows us to acsess values by finding their keys
 import com.google.gson.JsonParser; // reads and understand the JSON text
@@ -282,7 +282,7 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
 
     // Opens a box that has product information
     private void showListing(Listing item) { // we recive an item
-
+    	boolean isOwner = item.sellerID == userID; // check who owns the listing
         JTextArea details = new JTextArea( // items details in a text area, Area can have multiple lines field only one
 
                 "Item: " + item.title + "\n" + // title
@@ -301,22 +301,39 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
                 "Seller: " + item.seller + "\n\n" + // whos selling it
 
                 "Description:\n" + item.description // item description
+                
         );
 
         details.setEditable(false); // cannot edit one of the dunctions of JtextArea
         details.setLineWrap(true);  // move to next line if needed
         details.setWrapStyleWord(true); //keeps words together insetad of sending half a word to the next line if needed the whole word will be sent
-
         details.setBackground( // details is our box we are setting the background
                 UIManager.getColor("Panel.background") // panel.background is the default that swing uses so that details isnt a different colour than the other part of the window
         );
+        
+       Object[]options;
+       
+       if (isOwner) {
+    	   options = new Object[] {"Close", "Edit Listing", "Delete Listing."};
+       } else {
+    	   options = new Object[] {"Close"};
+       }
 
-        JOptionPane.showMessageDialog( // swing builder to make a popup
+       int choice = JOptionPane.showOptionDialog( // swing builder to make a popup
                 this, // for our window
                 details, // this specifc box
                 "Listing details", // title
-                JOptionPane.INFORMATION_MESSAGE // type of icon like the other one did error this does information
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.INFORMATION_MESSAGE, // type of icon like the other one did error this does information
+                null,
+                options,
+                options[0]
         );
+       if (isOwner && choice == 1) {
+    	   editListing(item);
+       } else if (isOwner && choice == 2) {
+    	   deleteListing(item.id);
+       }
     }
     //create the listing
     private void createListing() {
@@ -406,7 +423,6 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
     		data.addProperty("price", price);
     		data.addProperty("category_id", categoryID);
     		data.addProperty("condition", condition);
-    		System.out.println("Sending listing data: " + gson.toJson(data));
     		HttpRequest request = HttpRequest.newBuilder()
     				.uri(URI.create("http://127.0.0.1:5000/api/listings"))
     				.header("Content-Type", "application/json")
@@ -424,6 +440,140 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
     	} catch(Exception ex) {
     		ex.printStackTrace();
     		JOptionPane.showMessageDialog(dialog, "Could not connect to the marketplace server.");
+    	}
+    }
+    
+    private void editListing(Listing item) {
+        JDialog dialog = new JDialog(this, "Edit Listing", true);
+        dialog.setSize(450, 450);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout(10, 10));
+        JPanel form = new JPanel(new GridLayout(0, 2, 10, 10));
+        JTextField titleField = new JTextField(item.title);
+        JTextArea descriptionArea = new JTextArea(item.description, 4, 20);
+        descriptionArea.setLineWrap(true);
+        descriptionArea.setWrapStyleWord(true);
+        JTextField priceField = new JTextField(String.format("%.2f", item.priceCents / 100.0));
+        String[] categories = {
+                "Textbooks",
+                "Electronics",
+                "Furniture",
+                "School Supplies",
+                "Clothing",
+                "Housing & Sublets",
+                "Other"
+        };
+        JComboBox<String> categoryBox = new JComboBox<>(categories);
+        categoryBox.setSelectedItem(item.category);
+        String[] conditions = {
+                "New",
+                "Like New",
+                "Used",
+                "Fair"
+        };
+        JComboBox<String> conditionBox = new JComboBox<>(conditions);
+        conditionBox.setSelectedItem(item.condition.replace('_', ' ')
+        		.substring(0, 1).toUpperCase() + item.condition.replace('_', ' ').substring(1));
+        form.add(new JLabel("Title:"));
+        form.add(titleField);
+        form.add(new JLabel("Description:"));
+        form.add(new JScrollPane(descriptionArea));
+        form.add(new JLabel("Price:"));
+        form.add(priceField);
+        form.add(new JLabel("Category:"));
+        form.add(categoryBox);
+        form.add(new JLabel("Condition:"));
+        form.add(conditionBox);
+        JButton saveButton = new JButton("Save Changes");
+        saveButton.addActionListener(e -> {
+            String title = titleField.getText().trim();
+            String description = descriptionArea.getText().trim();
+            if (title.isEmpty() || priceField.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, "Please enter a title and price.");
+                return;
+            }
+            try {
+                double price = Double.parseDouble(priceField.getText());
+                if (price < 0) {
+                    JOptionPane.showMessageDialog(dialog, "Price cannot be negative.");
+                    return;
+                }
+                int categoryID = categoryBox.getSelectedIndex() + 1;
+                String condition = conditionBox.getSelectedItem().toString().toLowerCase().replace(" ", "_");
+                updateListing(
+                        item.id,
+                        title,
+                        description,
+                        price,
+                        categoryID,
+                        condition,
+                        dialog
+                );
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(dialog, "Please enter a valid price.");
+            }
+        });
+        dialog.add(form, BorderLayout.CENTER);
+        dialog.add(saveButton, BorderLayout.SOUTH);
+        dialog.setVisible(true);
+    }
+    
+    private void updateListing(int listingID, String title, String description, double price, int categoryID, String condition, JDialog dialog) {
+    	try {
+    		Gson gson = new Gson();
+    		JsonObject data = new JsonObject();
+    		data.addProperty("title", title);
+    		data.addProperty("description", description);
+    		data.addProperty("price", price);
+    		data.addProperty("category_id", categoryID);
+    		data.addProperty("condition", condition);
+    		HttpRequest request = HttpRequest.newBuilder()
+    				.uri(URI.create("http://127.0.0.1:5000/api/listings/" + listingID))
+    				.header("Content-Type", "application/json")
+    				.PUT(HttpRequest.BodyPublishers.ofString(gson.toJson(data)))
+    				.build();
+    		System.out.println("Edit URL: " + request.uri());
+    		System.out.println("Request method: " + request.method());
+    		HttpResponse<String> response = ApiClient.client.send(request, HttpResponse.BodyHandlers.ofString());
+    		
+    		if (response.statusCode() == 200) {
+    			JOptionPane.showMessageDialog(dialog, "Listing updated successfully!");
+    			dialog.dispose();
+    			loadListings();
+    		} else {
+    			JOptionPane.showMessageDialog(dialog, "Could not update listing:\n" + response.body());
+    		}
+    	} catch(Exception ex) {
+    		ex.printStackTrace();
+    		JOptionPane.showMessageDialog(dialog, "Could not connect to the marketplace server.");
+    	}
+    }
+    
+    private void deleteListing(int listingID) {
+    	int confirm = JOptionPane.showConfirmDialog(this, 
+    			"Are you sure you want to delete this listing?",
+    			"Confirm Deleteion",
+    			JOptionPane.YES_NO_OPTION);
+    	if (confirm != JOptionPane.YES_NO_OPTION) {
+    		return;
+    	}
+    	try {
+    		HttpRequest request = HttpRequest.newBuilder()
+    				.uri(URI.create("http://127.0.0.1:5000/api/listings/" + listingID))
+    				.DELETE()
+    				.build();
+    		HttpResponse<String> response = ApiClient.client.send(
+    				request,
+    				HttpResponse.BodyHandlers.ofString());
+    		if (response.statusCode() == 200) {
+    			JOptionPane.showMessageDialog(this, "Listing deleted successfully");
+    			loadListings();
+    		} else {
+    			JOptionPane.showMessageDialog(this, "Could not delete listing");
+    		}
+    	} catch (Exception ex) {
+    		ex.printStackTrace();
+    		JOptionPane.showMessageDialog(this, "Could not connect to the marketplace server");
     	}
     }
 
@@ -447,12 +597,14 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
             }
 
             JsonObject fields = element.getAsJsonObject(); // allows us to acsess the elemnts through JSON so we can extract the keys and values
-            if (!hasValue(fields, "title") || !hasValue(fields, "price_cents")) {
+            if (!hasValue(fields, "id") || !hasValue(fields, "seller_id") || !hasValue(fields, "title") || !hasValue(fields, "price_cents")) {
                 throw new IllegalArgumentException("Missing listing fields"); // if the key does not have a title or price_cents throw error
             }
 
                     // Create a Java product object using all the data we just got
             listings.add(new Listing(
+            		fields.get("id").getAsInt(),
+            		fields.get("seller_id").getAsInt(),
                     fields.get("title").getAsString(),
                     fields.get("price_cents").getAsInt(),
                     getString(fields, "category_name"),
@@ -477,7 +629,9 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
     private static class Listing {
 
         //variables needed to make a listing
-        final String title;
+        final int id;
+        final int sellerID;
+    	final String title;
         final String category;
         final String condition;
         final String seller;
@@ -486,6 +640,8 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
         final int priceCents;
 
         Listing( // listing constructor
+        		int id,
+        		int sellerID,
                 String title,
                 int priceCents,
                 String category,
@@ -494,7 +650,9 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
                 String description
         ) {
 
-            this.title = title; // this refers it to the current object being made instead of the consturctot
+        	this.id = id; // this refers it to the current object being made instead of the consturctot
+        	this.sellerID = sellerID;
+            this.title = title; 
             this.priceCents = priceCents;
             this.category = category;
             this.condition = condition;
