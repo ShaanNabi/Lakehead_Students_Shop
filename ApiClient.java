@@ -1,4 +1,3 @@
-package p2;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.URI;
@@ -6,6 +5,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class ApiClient {
 	private static final CookieManager cookieManager = new CookieManager();
@@ -14,7 +15,7 @@ public class ApiClient {
 		cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ALL);
 		client = HttpClient.newBuilder().cookieHandler(cookieManager).build();
 	}
-	public static boolean loginToFlask(String email) {
+	public static int loginToFlask(String email) {
 		try {
 			Gson gson = new Gson();
 			String json = "{\"email\":" + gson.toJson(email) + "}";
@@ -27,10 +28,14 @@ public class ApiClient {
 					request,
 					HttpResponse.BodyHandlers.ofString()
 					);
-			return response.statusCode() == 200;
+			if (response.statusCode() == 200) {
+				JsonObject result = JsonParser.parseString(response.body()).getAsJsonObject();
+				return result.get("user_id").getAsInt();
+			}
+			return -1;
 		} catch (Exception e) {
 			e.printStackTrace();
-			return false;
+			return -1;
 		}
 	}
 }
