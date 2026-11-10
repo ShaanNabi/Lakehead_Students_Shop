@@ -282,9 +282,7 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
        // Opens a box that has product information
     private void showListing(Listing item) { // we recive an item
         
-        // TEMPORARILY FORCE THIS TO FALSE TO TEST MESSAGING
-        // normally this would check if your userID matches the sellerID
-        boolean isOwner = false; 
+        boolean isOwner = item.sellerID == userID;  
         
         JTextArea details = new JTextArea( // items details in a text area, Area can have multiple lines field only one
                 "Item: " + item.title + "\n" + // title
