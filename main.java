@@ -280,68 +280,78 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
         }.execute(); // runs the background task the swing worker is gonna do
     }
 
-    // Opens a box that has product information
+       // Opens a box that has product information
     private void showListing(Listing item) { // we recive an item
-    	boolean isOwner = item.sellerID == userID; // check who owns the listing
+        
+        // TEMPORARILY FORCE THIS TO FALSE TO TEST MESSAGING
+        // normally this would check if your userID matches the sellerID
+        boolean isOwner = false; 
+        
         JTextArea details = new JTextArea( // items details in a text area, Area can have multiple lines field only one
-
                 "Item: " + item.title + "\n" + // title
-
-                "Price: " + String.format( // price using canadian money
-                        Locale.CANADA,
-                        "$%.2f", // rounding
-                        item.priceCents / 100.0
-                ) + "\n" +
-
+                "Price: " + String.format(Locale.CANADA, "$%.2f", item.priceCents / 100.0) + "\n" + // price using canadian money, rounding
                 "Category: " + item.category + "\n" + // category 
-
-                "Condition: " +
-                        item.condition.replace('_', ' ') + "\n" + // switch from x_x to x x
-
+                "Condition: " + item.condition.replace('_', ' ') + "\n" + // switch from x_x to x x
                 "Seller: " + item.seller + "\n\n" + // whos selling it
-
                 "Description:\n" + item.description // item description
-                
         );
 
         details.setEditable(false); // cannot edit one of the dunctions of JtextArea
         details.setLineWrap(true);  // move to next line if needed
-        details.setWrapStyleWord(true); //keeps words together insetad of sending half a word to the next line if needed the whole word will be sent
+        details.setWrapStyleWord(true); // keeps words together insetad of sending half a word to the next line
         details.setBackground( // details is our box we are setting the background
-                UIManager.getColor("Panel.background") // panel.background is the default that swing uses so that details isnt a different colour than the other part of the window
+                UIManager.getColor("Panel.background") // panel.background is the default that swing uses so that details isnt a different colour
         );
         
-       // we are creating the buttons that will show up in the popup
-       Object[] options; 
-       
-       if (isOwner) {
-    	   // if you own the listing you can edit or delete it
-    	   options = new Object[] {"Close", "Edit Listing", "Delete Listing."};
-       } else {
-    	   // if you don't own it, you can only message the seller now
-    	   options = new Object[] {"Close", "Message Seller"};
-       }
+        // We use JOptionPane.YES_NO_CANCEL_OPTION to force Java to show our custom buttons
+        // we are creating the buttons that will show up in the popup
+        Object[] options;
+        int choice; // variable to hold which button the user clicked
 
-       int choice = JOptionPane.showOptionDialog( // swing builder to make a popup
+        if (isOwner) {
+            // if you own the listing you can edit or delete it
+            options = new Object[] {"Close", "Edit Listing", "Delete Listing"};
+            
+            // swing builder to make a popup
+            choice = JOptionPane.showOptionDialog(
                 this, // for our window
                 details, // this specifc box
                 "Listing details", // title
-                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.YES_NO_CANCEL_OPTION, // FORCES BUTTONS TO SHOW instead of the default OK button
                 JOptionPane.INFORMATION_MESSAGE, // type of icon like the other one did error this does information
-                null,
-                options,
+                null, 
+                options, 
                 options[0]
-        );
+            );
+            
             // checking which button the user clicked
-       if (isOwner && choice == 1) {
-    	   editListing(item); // clicked edit
-       } else if (isOwner && choice == 2) {
-    	   deleteListing(item.id); // clicked delete
-       } else if (!isOwner && choice == 1) {
-           // they clicked "Message Seller" so we open the new chat window we just made
-           MessageWindow chat = new MessageWindow(this, item.id, item.seller, item.title);
-           chat.setVisible(true); // makes the window pop up
-       }
+            if (choice == 1) {
+                editListing(item); // clicked edit
+            } else if (choice == 2) {
+                deleteListing(item.id); // clicked delete
+            }
+        } else {
+            // if you don't own it, you can only message the seller now
+            options = new Object[] {"Close", "Message Seller"};
+            
+            // swing builder to make a popup
+            choice = JOptionPane.showOptionDialog(
+                this, // for our window
+                details, // this specifc box
+                "Listing details", // title
+                JOptionPane.YES_NO_OPTION, // FORCES BUTTONS TO SHOW instead of the default OK button
+                JOptionPane.INFORMATION_MESSAGE, // type of icon like the other one did error this does information
+                null, 
+                options, 
+                options[0]
+            );
+            
+            if (choice == 1) {
+                // they clicked "Message Seller" so we open the new chat window we just made
+                MessageWindow chat = new MessageWindow(this, item.id, item.seller, item.title);
+                chat.setVisible(true); // makes the window pop up
+            }
+        }
     }
     //create the listing
     private void createListing() {
