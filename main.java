@@ -1,4 +1,3 @@
-package p2;
 import com.google.gson.JsonElement; // holds the JSON info in java
 import com.google.gson.JsonObject; // allows us to acsess values by finding their keys
 import com.google.gson.JsonParser; // reads and understand the JSON text
@@ -683,7 +682,10 @@ public class main extends JFrame {  // JFrame is the window that pops up when we
     public static void main(String[] args) {
 
         SwingUtilities.invokeLater( // makes it so that swing runs everything correctly
-                () -> new LoginScreen().setVisible(true) // displays everything we just made into that window
+                () -> {
+                    // BYPASS LOGIN: Launch the marketplace directly with a dummy user ID
+                    new main(1).setVisible(true);
+                }
         );
     }
 }
