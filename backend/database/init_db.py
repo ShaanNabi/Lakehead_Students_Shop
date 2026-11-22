@@ -3,15 +3,17 @@
 # python init_db.py --no-seed makes empty tables only
 # it wipes whatever was in the db before
 
+import os                 # lets us read environment variables
 import sqlite3            # python's built in sqlite library
 import sys                # lets us read stuff typed after the command
 from pathlib import Path  # makes file paths work on any computer
 
 HERE = Path(__file__).resolve().parent          # the folder this file is in
-DB_PATH = HERE.parent / "lakehead_shop.db"      # db file goes one folder up in backend
+DB_PATH = Path(os.environ.get("DB_PATH") or HERE.parent / "lakehead_shop.db")   # db file goes one folder up in backend unless DB_PATH says otherwise
 
 
 def init_db(seed=True):
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)                        # make sure the folder for the db exists
     conn = sqlite3.connect(DB_PATH)                                          # open the db, makes the file if it isnt there
     conn.execute("PRAGMA foreign_keys = ON")                                 # turn on foreign keys for this connection
     conn.executescript((HERE / "schema.sql").read_text(encoding="utf-8"))   # read schema.sql and run all of it

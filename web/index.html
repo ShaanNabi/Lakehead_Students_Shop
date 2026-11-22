@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lakehead Students Shop</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <!-- title on the left and login stuff on the right -->
+  <header>
+    <h1>Lakehead Students Shop - Browse Listings</h1>
+    <div id="account"></div>
+  </header>
+
+  <!-- search bar and buttons, same as the java window -->
+  <div class="controls">
+    <label for="search">Find an item:</label>
+    <input id="search" type="text" size="22">
+    <button id="searchBtn" type="button">Search</button>
+    <button id="refreshBtn" type="button">Refresh</button>
+    <button id="createBtn" type="button">Create Listing</button>
+    <button id="messagesBtn" type="button" hidden>Messages</button>
+  </div>
+
+  <!-- the table of listings, javascript fills the rows -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Item</th><th>Price</th><th>Category</th><th>Condition</th><th>Seller</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <!-- status line at the bottom -->
+  <p id="status">Ready</p>
+
+  <!-- one popup that every dialog reuses -->
+  <dialog id="dialog"></dialog>
+
+  <noscript>This site needs javascript turned on.</noscript>
+  <script src="/static/app.js"></script>
+</body>
+</html>

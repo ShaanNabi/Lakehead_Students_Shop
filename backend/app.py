@@ -1,16 +1,34 @@
 # this is the web server for the shop
 # run it with python backend/app.py then go to http://127.0.0.1:5000
-# the frontend hits these /api urls and gets json back
+# it serves the website from the web folder and the /api urls the website calls
 # all the sql lives in db.py so this file just checks input and replies
 
 import os                                          # lets us read environment variables
 from functools import wraps                        # helper for making our own decorators
-from flask import Flask, jsonify, request, session # flask pieces we need
+from pathlib import Path                           # makes file paths work on any computer
+from flask import Flask, jsonify, request, send_from_directory, session # flask pieces we need
 import db                                          # our db.py file
+from database.init_db import init_db               # the script that builds the db file
 
-app = Flask(__name__)                                                  # make the flask app
+WEB_DIR = Path(__file__).resolve().parent.parent / "web"               # the website files live in the web folder
+
+app = Flask(__name__, static_folder=str(WEB_DIR), static_url_path="/static")   # make the flask app and let it serve the web folder
+ONLINE = os.environ.get("COOKIE_SECURE") == "1"                        # set COOKIE_SECURE=1 on https hosting, it also turns on the safety checks below
+if ONLINE and not os.environ.get("SECRET_KEY"):                        # the default key is public in the repo so it can never be used online
+    raise RuntimeError("Set the SECRET_KEY environment variable before running online")
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")   # signs the login cookie, use a real random one when we go live
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"                          # stops other sites from sending our login cookie
+app.config["SESSION_COOKIE_SECURE"] = ONLINE                           # only send the login cookie over https when online
 app.teardown_appcontext(db.close_db)                                   # close the db after every request
+
+if not db.DB_PATH.exists():                                            # first start with no db file
+    init_db(seed=os.environ.get("SEED_DEMO_DATA", "1") == "1")         # build it, with demo data unless SEED_DEMO_DATA=0
+
+
+# the website's home page
+@app.get("/")
+def home():
+    return send_from_directory(WEB_DIR, "index.html")
 
 
 # turns a db row into a normal dict so jsonify can send it
@@ -69,6 +87,8 @@ def login():
 
 @app.post("/api/dev-login")
 def dev_login():
+    if ONLINE:                                              # this logs in with just an email, so it is switched off online
+        return jsonify(error="Not found"), 404
     data = request.get_json(silent=True) or {}
 
     email = data.get("email", "").strip()
@@ -299,6 +319,8 @@ def reply(convo_id):
 
 
 if __name__ == "__main__":                                     # only when you run this file directly
-    if not db.DB_PATH.exists():                                # no db file yet
-        print("No database yet, run: python backend/database/init_db.py")
-    app.run(debug=True)                                        # start the server, debug reloads when you save
+    app.run(
+        host=os.environ.get("HOST", "127.0.0.1"),              # 127.0.0.1 means only this computer can open it
+        port=int(os.environ.get("PORT", 5000)),                # which port to listen on
+        debug=os.environ.get("FLASK_DEBUG") == "1",            # debug is off unless you set FLASK_DEBUG=1
+    )

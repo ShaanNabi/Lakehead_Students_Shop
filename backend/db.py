@@ -10,7 +10,7 @@ from pathlib import Path  # makes file paths work on any computer
 from flask import g       # flask's per request storage box
 
 
-DB_PATH = Path(__file__).resolve().parent / "lakehead_shop.db"   # db file sits next to this file
+DB_PATH = Path(os.environ.get("DB_PATH") or Path(__file__).resolve().parent / "lakehead_shop.db")   # db file sits next to this file unless DB_PATH says otherwise
 
 PASSWORD_ITERATIONS = 600_000   # how many times we scramble a password, more is slower to crack
 
@@ -310,10 +310,14 @@ def is_conversation_participant(db, conversation_id, user_id):
 def get_conversations_for_user(db, user_id):
     return db.execute(
         """SELECT c.id, c.listing_id, l.title AS listing_title, c.buyer_id, l.seller_id,
+                  b.first_name || ' ' || b.last_name AS buyer_name,   -- who is buying
+                  s.first_name || ' ' || s.last_name AS seller_name,  -- who is selling
                   (SELECT body FROM messages m WHERE m.conversation_id = c.id
                     ORDER BY m.sent_at DESC, m.id DESC LIMIT 1) AS last_message -- newest message for the preview
            FROM conversations c
            JOIN listings l ON l.id = c.listing_id
+           JOIN users b ON b.id = c.buyer_id
+           JOIN users s ON s.id = l.seller_id
            WHERE c.buyer_id = ? OR l.seller_id = ?
            ORDER BY c.created_at DESC""",
         (user_id, user_id),
