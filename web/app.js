@@ -21,7 +21,7 @@ async function api(method, url, body) {
     options.body = JSON.stringify(body);                         // turn the object into text
   }
   try {
-    const res = await fetch(url, options);                       // send it
+    const res = await fetch("http://127.0.0.1:5000" + url, options);                       // send it
     let data = null;
     try { data = await res.json(); } catch (e) { data = null; }  // the reply might not be json
     return { ok: res.ok, status: res.status, data };

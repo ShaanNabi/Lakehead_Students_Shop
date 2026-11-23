@@ -5,7 +5,7 @@ import os
 import psycopg
 from psycopg.rows import dict_row
 from flask import g
-
+2
 
 PASSWORD_ITERATIONS = 600_000
 
@@ -237,16 +237,18 @@ def create_listing(
 
     listing_id = cur.fetchone()["id"]
 
-    db.executemany(
-        """
-        INSERT INTO listing_images (listing_id, image_path, sort_order)
-        VALUES (%s, %s, %s)
-        """,
-        [
-            (listing_id, path, i)
-            for i, path in enumerate(image_paths)
-        ]
-    )
+    if image_paths:
+        with db.cursor() as cursor:
+            cursor.executemany(
+                """
+                INSERT INTO listing_images (listing_id, image_path, sort_order)
+                VALUES (%s, %s, %s)
+                """,
+                [
+                    (listing_id, path, i)
+                    for i, path in enumerate(image_paths)
+                ]
+            )
 
     db.commit()
     return listing_id

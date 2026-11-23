@@ -5,10 +5,20 @@
 
 import os                                          # lets us read environment variables
 from functools import wraps                        # helper for making our own decorators
-from flask import Flask, jsonify, request, session # flask pieces we need
+from flask import Flask, jsonify, request, send_from_directory, session # flask pieces we need
 import db                                          # our db.py file
 
-app = Flask(__name__)                                                  # make the flask app
+WEB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "web"))     # make the flask app
+
+app = Flask(
+    __name__,
+    static_folder=WEB_DIR,
+    static_url_path="/static"
+)
+@app.route("/")
+def home():
+    return send_from_directory(WEB_DIR, "index.html")
+
 app.secret_key = os.environ.get("SECRET_KEY")                          # signs the login cookie, use a real random one when we go live
 
 if not app.secret_key:
