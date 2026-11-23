@@ -6,7 +6,10 @@
 import os                                          # lets us read environment variables
 from functools import wraps                        # helper for making our own decorators
 from flask import Flask, jsonify, request, send_from_directory, session # flask pieces we need
+from dotenv import load_dotenv                     # reads the .env file so nobody has to type export commands
 import db                                          # our db.py file
+
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))   # loads SECRET_KEY and SUPABASE_DB_URL from the .env file in the project folder
 
 WEB_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "web"))     # make the flask app
 
@@ -22,7 +25,7 @@ def home():
 app.secret_key = os.environ.get("SECRET_KEY")                          # signs the login cookie, use a real random one when we go live
 
 if not app.secret_key:
-    raise RuntimeError("SECRET_KEY environment variable is missing.")
+    raise RuntimeError("SECRET_KEY is missing. Run  python run.py  once and it sets up your .env file.")
 app.teardown_appcontext(db.close_db)                                   # close the db after every request
 
 
@@ -294,4 +297,7 @@ def reply(convo_id):
 
 
 if __name__ == "__main__":                                     # only when you run this file directly
-   app.run(debug=False)                                       # start the server, debug reloads when you save
+    app.run(
+        port=int(os.environ.get("PORT", 5000)),                # run.py sets PORT when 5000 is already taken
+        debug=False,                                           # debug stays off
+    )

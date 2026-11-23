@@ -2,18 +2,35 @@
 
 The same shop as the Java window, but it opens in a browser. No Java or javac needed.
 
-## Run it on your computer
+## Run it (same steps for everyone)
 ```bash
-source .venv/Scripts/activate
-pip install -r requirements.txt
-python backend/app.py
+git pull
+python run.py
 ```
-Then open http://127.0.0.1:5000
+On a Mac use `python3 run.py`.
 
-- The database builds itself the first time (with demo data).
-- Demo logins, all with password `password123`:
-  `shaan.demo@lakeheadu.ca`, `zack.demo@lakeheadu.ca`, `ahmed.demo@lakeheadu.ca`, `muhid.demo@lakeheadu.ca`
-- Sign up needs a `@lakeheadu.ca` email.
+The first time, `run.py` sets everything up by itself:
+1. makes a `.venv` and installs the packages
+2. makes a secret key for you
+3. asks you to paste the **database URL** once (get it from Zack in a private message, never in the group chat)
+4. checks it can reach the database
+5. starts the site and opens your browser
+
+You will not see the URL while you paste it, that is normal. Press Enter.
+
+After that it is just `python run.py`. Press `Ctrl + C` in the terminal to stop it.
+
+Your settings are saved in a `.env` file. It is git-ignored, so it never goes on GitHub. `.env.example` shows what it looks like.
+
+## If something goes wrong
+| what you see | what to do |
+|---|---|
+| `Could not connect to the database` and mentions the Session pooler | your internet cannot reach the database directly. Ask Zack for the Session pooler URL, delete the `.env` file, run `python run.py` again |
+| `password authentication failed` | the password changed. Ask Zack for the newest URL, delete `.env`, run again |
+| `Could not make a .venv here` | it still works, it uses your normal Python instead |
+| `Port 5000 is already in use` | it picks the next free port by itself and prints the address |
+| `python` not found on a Mac | use `python3 run.py` |
+| you want to change the database URL | delete the `.env` file and run `python run.py` again |
 
 ## What is in here
 | file | what it does |
@@ -31,14 +48,7 @@ Any host that runs Python works (Render, Railway, PythonAnywhere).
 |---|---|
 | build command | `pip install -r requirements.txt` |
 | start command | `gunicorn --preload --chdir backend app:app` (also in the `Procfile`) |
-| `SECRET_KEY` | a long random string, required |
-| `COOKIE_SECURE` | `1` (turns on the online safety checks below) |
-| `SEED_DEMO_DATA` | `0` to skip the demo accounts |
-| `DB_PATH` | where to keep the database file, ideally on a persistent disk |
+| `SECRET_KEY` | a long random string |
+| `SUPABASE_DB_URL` | the database URL (set it in the host's dashboard, never in the code) |
 
-What `COOKIE_SECURE=1` does:
-- the app refuses to start without a `SECRET_KEY`
-- `/api/dev-login` (login with only an email) is switched off
-- the login cookie is only sent over https
-
-Heads up: the database is a file on the server. Most free plans wipe it when the app restarts or redeploys. That is the gap the cloud database fixes.
+On a host you set these in its dashboard instead of a `.env` file.

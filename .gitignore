@@ -15,5 +15,8 @@ venv/
 Thumbs.db
 .venv/
 
+# Secrets (database url and secret key), never commit these
+.env
+
 # Java compiled files (javac rebuilds these)
 *.class

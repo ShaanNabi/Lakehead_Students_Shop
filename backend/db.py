@@ -5,7 +5,6 @@ import os
 import psycopg
 from psycopg.rows import dict_row
 from flask import g
-2
 
 PASSWORD_ITERATIONS = 600_000
 
@@ -16,7 +15,7 @@ def connect():
     database_url = os.environ.get("SUPABASE_DB_URL")
 
     if not database_url:
-        raise RuntimeError("SUPABASE_DB_URL environment variable is missing.")
+        raise RuntimeError("SUPABASE_DB_URL is missing. Run  python run.py  once and it sets up your .env file.")
 
     return psycopg.connect(
         database_url,
