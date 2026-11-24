@@ -25,12 +25,13 @@ Your settings are saved in a `.env` file. It is git-ignored, so it never goes on
 ## If something goes wrong
 | what you see | what to do |
 |---|---|
-| `Could not connect to the database` and mentions the Session pooler | your internet cannot reach the database directly. Ask Zack for the Session pooler URL, delete the `.env` file, run `python run.py` again |
-| `password authentication failed` | the password changed. Ask Zack for the newest URL, delete `.env`, run again |
+| `Could not connect to the database` and mentions the Session pooler | your internet cannot reach the database directly. Ask Zack for the Session pooler URL, then run `python run.py --reset` and paste it |
+| `password authentication failed` | the password changed. Ask Zack for the newest URL, then run `python run.py --reset` and paste it |
+| `Heads up: this terminal has its own SUPABASE_DB_URL set` | an old `export` is still in that terminal. Close the tab and open a new one, or run `unset SUPABASE_DB_URL` |
 | `Could not make a .venv here` | it still works, it uses your normal Python instead |
 | `Port 5000 is already in use` | it picks the next free port by itself and prints the address |
 | `python` not found on a Mac | use `python3 run.py` |
-| you want to change the database URL | delete the `.env` file and run `python run.py` again |
+| you want to change the database URL | run `python run.py --reset` and paste the new one (your secret key stays the same) |
 
 ## What is in here
 | file | what it does |

@@ -2,7 +2,11 @@
 #     python run.py
 # the first time it makes a .venv, installs the packages and asks for the database url
 # after that it just starts the shop and opens your browser
-# extra options:  --setup-only  --no-browser  --skip-db-check
+# extra options:
+#     --reset          type in a new database url (when Zack sends you a new one)
+#     --setup-only     do the setup and checks but do not start the site
+#     --no-browser     do not open the browser
+#     --skip-db-check  skip the database connection test
 
 import getpass          # asks for the database url without showing it on screen
 import hashlib          # tells us when requirements.txt changed
@@ -112,20 +116,34 @@ def ask_hidden(prompt):
     return input(prompt)
 
 
-# makes sure .env has a secret key and a database url
-def ensure_env():
+# makes sure .env has a secret key and a database url, reset=True asks for a new url even if one is saved
+def ensure_env(reset=False):
     if not has_real_value("SECRET_KEY"):
         set_env_value("SECRET_KEY", secrets.token_hex(32))           # random, so cookies are safe
         say("Made a secret key for you.")
-    if not has_real_value("SUPABASE_DB_URL"):
+    if reset or not has_real_value("SUPABASE_DB_URL"):
         say("")
+        if reset:
+            say("Resetting the database URL (your secret key stays the same).")
         say("Paste the database URL Zack gave you, then press Enter.")
         say("You will not see it while you paste, that is normal.")
         url = ask_hidden("Database URL: ").strip().strip("'\"")
         if not url.startswith(("postgresql://", "postgres://")):
-            fail("That does not look like a database URL, it should start with postgresql://  Run python run.py to try again.")
+            fail("That does not look like a database URL, it should start with postgresql://  Nothing was changed. Run python run.py --reset to try again.")
         set_env_value("SUPABASE_DB_URL", url)
         say("Saved to .env (it is git-ignored, so it never goes on GitHub).")
+
+
+# warns if the terminal has its own SUPABASE_DB_URL, because that one beats the .env file
+def warn_if_shell_url_differs():
+    in_shell = os.environ.get("SUPABASE_DB_URL")
+    in_file = read_env().get("SUPABASE_DB_URL")
+    if in_shell and in_file and in_shell != in_file:
+        say("")
+        say("Heads up: this terminal has its own SUPABASE_DB_URL set (an old export command),")
+        say("and it beats the one in .env. Close this terminal tab and open a new one,")
+        say("or run  unset SUPABASE_DB_URL  and then python run.py again.")
+        say("")
 
 
 # swaps any secret out of a piece of text before we show it
@@ -141,14 +159,14 @@ def explain(error):
     low = error.lower()
     if "password authentication failed" in low:
         return ("The database password is wrong, or it was reset.\n"
-                "Ask Zack for the newest URL, delete the .env file, and run python run.py again.")
+                "Ask Zack for the newest URL, then run  python run.py --reset  and paste it.")
     if any(w in low for w in ("network is unreachable", "could not translate host", "getaddrinfo",
                               "name or service not known", "timeout", "timed out")):
         return ("Your internet cannot reach the database directly (it needs IPv6).\n"
                 "Ask Zack for the Session pooler URL (Supabase > Connect > Session pooler),\n"
-                "delete the .env file, and run python run.py again.")
+                "then run  python run.py --reset  and paste it.")
     if "connection refused" in low or "could not connect" in low:
-        return "The database refused the connection. Check the URL with Zack, then delete .env and run again."
+        return "The database refused the connection. Check the URL with Zack, then run  python run.py --reset  and paste it."
     return "Something went wrong talking to the database."
 
 
@@ -238,7 +256,8 @@ def main():
         fail("You need Python 3.9 or newer. Yours is " + sys.version.split()[0] + ".")
     py = get_python()
     install_packages(py)
-    ensure_env()
+    ensure_env(reset="--reset" in args)
+    warn_if_shell_url_differs()
     if "--skip-db-check" not in args:
         check_database(py)
     if "--setup-only" in args:
