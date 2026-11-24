@@ -343,7 +343,10 @@ function chatDialog(opts) {
     }
     for (const m of messages) {
       const mine = m.sender_id === me.id;
-      log.append(el("p", { text: (mine ? "You" : m.sender_name) + ": " + m.body }));
+      log.append(el("p", { 
+        class: mine ? "msg-mine" : "msg-them", 
+        text: m.body 
+      }));
     }
     log.scrollTop = log.scrollHeight;                                // jump to the newest message
   }
@@ -405,7 +408,8 @@ async function messagesDialog() {
     list.append(el("p", { class: "hint", text: "No messages yet." }));
   } else {
     for (const c of res.data) {
-      const other = c.buyer_id === me.id ? c.seller_name : c.buyer_name;   // the other person in the chat
+      // the other person in the chat (fallback to "the other user" if the name is missing)
+      const other = c.buyer_id === me.id ? (c.seller_name || "the seller") : (c.buyer_name || "the buyer");
       list.append(el("button", {
         type: "button",
         class: "inbox-row",
